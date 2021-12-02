@@ -1,0 +1,97 @@
+---
+title: "Exploratory Data Analysis"
+author: "Arica Bartee"
+date: "11/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r import-libraries}
+library(tidyverse)
+library(lubridate)
+```
+
+
+# Datasets
+
+```{r import-datasets}
+med_income <- read_csv("MedianHouseholdIncome2015.csv")
+pov_lvl  <- read_csv("PercentagePeopleBelowPovertyLevel.csv")
+ged <- read_csv("PercentOver25CompletedHighSchool.csv")
+race <- read_csv("ShareRaceByCity.csv")
+killings <- read_csv("PoliceKillingsUS.csv")
+```
+
+```{r view-datasets}
+head(med_income)
+head(pov_lvl)
+head(ged)
+head(race)
+head(killings)
+```
+
+```{r rename-dataset-columns}
+race <- rename(race, "Geographic Area"="Geographic area")
+```
+
+```{r merge-datasets}
+geoData <- merge(med_income,
+                 merge(pov_lvl,
+                       merge(ged,
+                             race,
+                             by=c("Geographic Area", "City")),
+                       by=c("Geographic Area", "City")),
+                 by=c("Geographic Area", "City"))
+```
+
+```{r edit-column-types}
+geoData$`Median Income` <- as.numeric(geoData$`Median Income`)
+geoData$poverty_rate <- as.numeric(geoData$poverty_rate)
+geoData$percent_completed_hs <- as.numeric(geoData$percent_completed_hs)
+geoData$share_asian <- as.numeric(geoData$share_asian)
+geoData$share_black <- as.numeric(geoData$share_black)
+geoData$share_hispanic <- as.numeric(geoData$share_hispanic)
+geoData$share_native_american <- as.numeric(geoData$share_native_american)
+geoData$share_white <- as.numeric(geoData$share_white)
+
+killings$date <- gsub("/", "", killings$date)
+killings$date <- sprintf("%08d", killings$date)
+killings$date <- as_date(killings$date)
+```
+
+```{r factor-states}
+state <- factor(geoData$`Geographic Area`)
+geoData$state <- as.numeric(state)
+```
+
+
+
+
+```{r view-ndatasets}
+head(geoData)
+head(killings)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
