@@ -57,9 +57,6 @@ geoData$share_hispanic <- as.numeric(geoData$share_hispanic)
 geoData$share_native_american <- as.numeric(geoData$share_native_american)
 geoData$share_white <- as.numeric(geoData$share_white)
 
-killings$date <- gsub("/", "", killings$date)
-killings$date <- sprintf("%08d", killings$date)
-killings$date <- as_date(killings$date)
 ```
 
 ```{r factor-states}
@@ -76,10 +73,31 @@ head(killings)
 ```
 
 
+```{r}
+# TODO: ADJUST according to population demographics
+ggplot(killings) +
+  geom_boxplot(aes(x=race))
+```
+
+
+```{r}
+ggplot(geoData, aes(x=percent_completed_hs,
+                    y=`Median Income`)) +
+  geom_point(alpha=0.01) +
+  geom_smooth()
+```
 
 
 
+```{r}
+ggplot(killings, aes(x=state)) +
+  geom_histogram(stat='count') +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1))
+```
 
+```{r}
+
+```
 
 
 
