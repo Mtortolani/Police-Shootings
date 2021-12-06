@@ -1,0 +1,170 @@
+title: "Exploratory Data Analysis"
+author: "Arica Bartee"
+date: "11/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r import-libraries}
+library(tidyverse)
+library(lubridate)
+```
+
+
+# Datasets
+
+```{r import-datasets}
+med_income <- read_csv("MedianHouseholdIncome2015.csv")
+pov_lvl  <- read_csv("PercentagePeopleBelowPovertyLevel.csv")
+ged <- read_csv("PercentOver25CompletedHighSchool.csv")
+race <- read_csv("ShareRaceByCity.csv")
+killings <- read_csv("PoliceKillingsUS.csv")
+```
+
+```{r view-datasets}
+head(med_income)
+head(pov_lvl)
+head(ged)
+race
+killings
+```
+
+```{r rename-dataset-columns}
+race <- rename(race, "Geographic Area"="Geographic area")
+```
+
+```{r merge-datasets}
+geoData <- merge(med_income,
+                 merge(pov_lvl,
+                       merge(ged,
+                             race,
+                             by=c("Geographic Area", "City")),
+                       by=c("Geographic Area", "City")),
+                 by=c("Geographic Area", "City"))
+```
+
+```{r edit-column-types}
+geoData$`Median Income` <- as.numeric(geoData$`Median Income`)
+geoData$poverty_rate <- as.numeric(geoData$poverty_rate)
+geoData$percent_completed_hs <- as.numeric(geoData$percent_completed_hs)
+geoData$share_asian <- as.numeric(geoData$share_asian)
+geoData$share_black <- as.numeric(geoData$share_black)
+geoData$share_hispanic <- as.numeric(geoData$share_hispanic)
+geoData$share_native_american <- as.numeric(geoData$share_native_american)
+geoData$share_white <- as.numeric(geoData$share_white)
+
+```
+
+```{r factor-states}
+state <- factor(geoData$`Geographic Area`)
+geoData$state <- as.numeric(state)
+
+```
+
+
+
+
+```{r view-ndatasets}
+head(geoData)
+head(killings)
+```
+
+
+```{r}
+# TODO: ADJUST according to population demographics
+install.packages('tableau')
+library(waffle)
+ggplot() +
+  geom_bar(data = killings,aes(x=as.factor(race), fill = as.factor(race)))+
+  ggtitle("Killings in the US by Race, 2015-2017")+
+  labs(fill = 'Race of Victim')
+
+ggplot(killings, aes(x=factor(1), fill=factor(race))) +
+  geom_bar(width=1)+
+  coord_polar("y", start=0)+
+  theme_void() +
+  ggtitle("Killings in the US by Race, 2015-2017")+
+  labs(fill = 'Race of Victim')
+
+
+```
+
+```{r Race Makeup}
+summary(as.factor(killings$race))
+racial_makeup <- c(39,618,423, 31,1201,28,195)
+names(racial_makeup) <-c("Asian",'Black','Hispanic','Native American','White','Other','N/A')
+vis_killings_by_race <- waffle(racial_makeup/10, rows = 10)+
+  labs(title='Police Shooting Deaths by Race')
+vis_killings_by_race
+
+geoData_no_na <- na.omit(geoData)
+racial_makeup <- c(mean(geoData_no_na$share_asian),mean(geoData_no_na$share_black),mean(geoData_no_na$share_hispanic),mean(geoData_no_na$share_native),mean(geoData_no_na$share_white))
+print(mean(geoData_no_na[['share_asian']], na.rm=TRUE))
+names(racial_makeup) <-c("Asian",'Black','Hispanic','Native American','White')
+vis_total_race_makeup <- waffle(racial_makeup*2.2, rows=10)+
+  labs(title='Racial Makeup of US')
+vis_total_race_makeup
+
+
+
+```
+
+
+```{r}
+ggplot(geoData, aes(x=percent_completed_hs,
+                    y=`Median Income`)) +
+  geom_point(alpha=0.01) +
+  geom_smooth()
+```
+
+
+
+```{r}
+ggplot(killings, aes(x=state)) +
+  geom_histogram(stat='count') +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1))
+```
+
+
+```{r merge killings and geoData}
+names(geoData)[names(geoData) == "Geographic Area"] <- "state"
+names(geoData)[names(geoData) == "City"] <- "city"
+killings
+geoData
+data <- merge(geoData[1:10], killings, by=c('state','city'))
+data
+```
+
+```{r glm pt 1}
+
+killings <- na.omit(killings)
+lmMental <- glm(as.factor(signs_of_mental_illness) ~ age+as.factor(gender)+as.factor(race)+as.factor(armed)+as.factor(manner_of_death)+as.factor(threat_level)+as.factor(flee)+as.factor(body_camera), data=killings,family = "binomial")
+summary(lmMental)
+
+intercept <- glm(as.factor(signs_of_mental_illness) ~ 1, data=killings,family = "binomial")
+stepReg <- step(intercept, direction='both', scope=formula(lmMental), trace=0)
+stepReg$anova
+
+refined_glm_mental <- glm(as.factor(signs_of_mental_illness) ~ as.factor(gender)+as.factor(race)+as.factor(threat_level)+as.factor(flee), data=killings,family = "binomial")
+
+
+termplot(refined_glm_mental, partial.resid=TRUE, col.res='purple')
+
+
+
+```
+
+```{r glm part 2}
+lmMental2 <- glm(as.factor(signs_of_mental_illness) ~ age+as.factor(gender)+as.factor(race)+as.factor(threat_level)+as.factor(flee), data=killings,family = "binomial")
+summary(lmMental2)
+
+```
+
+```{r heatmap}
+# library(corrgram)
+# cor(killings[c(4,5,6,7,8,11,12,13,14)], use='pair',2)
+# corrgram(killings, order=TRUE, lower.panel=panel.shade, upper.panel=panel.pie, text.panel=panel.txt, main="Car Milage Data in PC2/PC1 Order") 
+```
