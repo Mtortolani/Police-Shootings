@@ -33,6 +33,13 @@ head(race)
 head(killings)
 ```
 
+```{r}
+summary(med_income)
+```
+
+
+
+
 ```{r rename-dataset-columns}
 race <- rename(race, "Geographic Area"="Geographic area")
 ```
@@ -72,6 +79,140 @@ head(geoData)
 head(killings)
 ```
 
+```{r}
+killing_count <- killings %>%
+  group_by(city, state) %>%
+  count(city) %>%
+  rename("Geographic Area" = state,
+         "City" = city,
+         "Death Count" = n) %>%
+  merge(geoData, by = c("Geographic Area", "City"), all.x=TRUE)
+
+head(killing_count)  
+
+#summary(geoData$num_of_deaths)
+```
+
+
+```{r}
+#table(killings$region)
+ca_pop <- 39613493
+tx_pop <- 29730311
+fl_pop <- 21944577
+ny_pop <- 19299981
+pa_pop <- 12804123
+il_pop <- 12569321
+oh_pop <- 11714618
+ga_pop <- 10830007
+nc_pop <- 10701022
+mi_pop <- 9992427
+
+wy_pop <- 581075
+wy_death <- 8
+vt_pop <- 623251
+vt_deaths <- 3
+ak_pop <- 724357
+ak_deaths <- 15
+nd_pop <- 770026
+nd_deaths <- 4
+sd_pop <- 896581
+sd_deaths <- 10
+de_pop <- 990334
+de_deaths <- 8
+ri_pop <- 1061509
+ri_deaths <- 2
+mt_pop <- 1085004
+mt_deaths <- 11
+me_pop <- 1354522
+me_deaths <- 13
+
+ca_death <- 424
+tx_death <- 225
+fl_death <- 154
+ny_death <- 45
+pa_death <- 51
+il_death <- 62
+oh_death <- 79
+ga_death <- 70
+nc_death <- 69
+mi_death <- 37
+
+
+deaths2 <- c(wy_death, vt_deaths, ak_deaths, nd_deaths, sd_deaths, de_deaths, ri_deaths, mt_deaths, me_deaths)
+pops2 <- c(wy_pop, vt_pop, ak_pop, nd_pop, sd_pop, de_pop, ri_pop, mt_pop, me_pop)
+
+
+deaths <- c(ca_death, tx_death, fl_death, ny_death, pa_death, il_death, oh_death, ga_death, nc_death, mi_death)
+pops <- c(ca_pop, tx_pop, fl_pop, ny_pop, pa_pop, il_pop, oh_pop, ga_pop, nc_pop, mi_pop)
+ 
+```
+
+
+```{r}
+killings <- killings %>%
+  mutate(region = case_when(state == "AK" ~ "alaska",
+                           state == "AL" ~ "alabama",
+                           state == "AR" ~ "arkansas",
+                           state == "AZ" ~ "arizona", 
+                           state == "CA" ~ "california",
+                           state == "CO" ~ "colorado",
+                           state == "CT" ~ "connecticut",
+                           state == "DE" ~ "deleware",
+                           state == "FL" ~ "florida",
+                           state == "GA" ~ "georgia",
+                           state == "HI" ~ "hawaii",
+                           state == "IA" ~ "iowa",
+                           state == "ID" ~ "idaho",
+                           state == "IL" ~ "illinois",
+                           state == "IN" ~ "indiana",
+                           state == "KS" ~ "kansas",
+                           state == "KY" ~ "kentucky",
+                           state == "LA" ~ "louisiana",
+                           state == "MA" ~ "massachusetts",
+                           state == "MD" ~ "maryland",
+                           state == "ME" ~ "maine",
+                           state == "MI" ~ "michigan",
+                           state == "MN" ~ "minnesota",
+                           state == "MO" ~ "missouri",
+                           state == "MS" ~ "mississippi",
+                           state == "MT" ~ "montana",
+                           state == "NC" ~ "north carolina",
+                           state == "ND" ~ "north dakota",
+                           state == "NE" ~ "nebraska",
+                           state == "NJ" ~ "new jersey",
+                           state == "NM" ~ "new mexico",
+                           state == "NV" ~ "nevada",
+                           state == "NY" ~ "new york",
+                           state == "OH" ~ "ohio",
+                           state == "OK" ~ "oklahoma",
+                           state == "OR" ~ "oregon",
+                           state == "PA" ~ "pennsylvania",
+                           state == "SC" ~ "south carolina",
+                           state == "SD" ~ "south dakota",
+                           state == "TN" ~ "tennessee",
+                           state == "TX" ~ "texas",
+                           state == "UT" ~ "utah",
+                           state == "VA" ~ "virginia",
+                           state == "WA" ~ "washington",
+                           state == "WI" ~ "wisconsin",
+                           state == "WV" ~ "west virginia",
+                           state == "WY" ~ "wyoming"))
+```
+
+
+```{r}
+head(killings)
+```
+```{r}
+killings <- killings %>%
+  mutate(race = case_when(race == "A" ~ "Asian",
+                          race == "B" ~ "Black",
+                          race == "H" ~ "Hispanic",
+                          race == "N" ~ "Native American",
+                          race == "W" ~ "White",
+                          race == "O" ~ "Other"))
+```
+
 
 ```{r}
 # TODO: ADJUST according to population demographics
@@ -88,28 +229,178 @@ ggplot(geoData, aes(x=percent_completed_hs,
 ```
 
 
+```{r}
+top_states <- c("california",
+                "texas",
+                                            "florida",
+                                            "new york",
+                                            "pennsylvania",
+                                            "illinois",
+                                            "ohio",
+                                            "georgia",
+                                            "north carolina",
+                                            "michigan")
+
+bottom_states <- c("wyoming",
+                   "vermont",
+                   "alaska",
+                   "north dakota",
+                   "south dakota",
+                   "deleware",
+                   "rhode island",
+                   "montana",
+                   "maine")
+```
+
 
 ```{r}
-ggplot(killings, aes(x=state)) +
-  geom_histogram(stat='count') +
-  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1))
+top_states <- data.frame(region = top_states,
+                     population = pops,
+                     deaths = deaths)
+bottom_states <- data.frame(region = bottom_states,
+                            population = pops2,
+                            deaths = deaths2)
+
+top_states <- top_states %>%
+  mutate(normals = (deaths/population) * 1000000,
+         region_type = "Urban") #%>%
+#  pivot_longer(cols = -c(region, population),
+ #              names_to = "count",
+  #             values_to = "value")
+bottom_states <- bottom_states %>%
+  mutate(normals = (deaths/population) * 1000000,
+         region_type = "Rural")
+
+head(top_states)
+head(bottom_states)
+```
+
+
+
+```{r}
+
+
+state_df <- rbind(top_states, bottom_states)
+
+head(state_df)
+```
+
+```{r}
+ggplot(data = state_df) +
+  geom_bar(mapping = aes(x = region, y = normals,
+                         fill = region_type),
+           stat = "identity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1)) +
+  labs(title = "Civilian Death Count by State",
+       subtitle = "per 100,000 people",
+       x = "State",
+       y = "Count",
+       caption = "Rural states indicate the least populated US States, and urban the most populated.") +
+  scale_fill_discrete(name = "Region Type")
+```
+
+
+
+```{r}
+ggplot(data = top_states, mapping = aes(x = region, y = normals)) +
+  geom_bar(stat = "identity",
+           fill = "coral3") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1)) +
+  labs(title = "Civilian Death Count (per 100,000 people)",
+       subtitle = "In 10 Most Populated States",
+       x = "State",
+       y = "Count")
+
+ggplot(data = top_states, mapping = aes(x = region, y = normals)) +
+  geom_bar(stat = "identity",
+           fill = "palevioletred") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1)) +
+  labs(title = "Civilian Death Count (per 100,000 people)",
+       subtitle = "In 10 Least Populated States",
+       x = "State",
+       y = "Count")
+```
+
+```{r}
+races <- c("Asian", "White", "Black", "Native American", "Hispanic", "Other")
+countrace <- c(39, 1201, 618, 31, 423, 28)
+popsrace <- c(14674252, 223553265, 38929319, 2932248, 50477594, 22579629)
+race_df <- data.frame(race = races,
+                      count = countrace,
+                      pop = popsrace,
+                      norm_race = (countrace/popsrace) * 100000)
+```
+
+```{r}
+ggplot() +
+  geom_bar(data = race_df, aes(x=races,
+                               y = norm_race,
+                               fill = "coral3"),
+           stat = "identity")+
+  labs(title = "Civilian Deaths by Race per 100,000 people",
+       subitle = "Normalized by US Population Demographics",
+       x = "Race",
+       y = "Count") +
+  theme_minimal() +
+  theme(legend.position = "none") 
+```
+
+```{r}
+ggplot(data = killings) +
+  geom_histogram(mapping = aes(x = signs_of_mental_illness),
+                 stat = "count",
+                 fill = "slategray4") +
+  labs(title = "Distribution of Civilians who Showed Mental Illness",
+       x = "Signs of Mental Illness",
+       y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+killings <- na.omit(killings)
+ggplot(data = killings) +
+  geom_histogram(mapping = aes(x = flee),
+                 stat = "count",
+                 fill = "lightpink4") +
+  labs(title = "Distribution of Flee Types",
+       x = "Flee Types",
+       y = "Count") +
+  theme_minimal()
+```
+
+
+
+
+```{r}
+ggplot(data = killings) +
+  geom_histogram(mapping = aes(x = flee,
+                               fill = as.factor(signs_of_mental_illness)),
+                 stat = "count") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(data = killings) +
+  geom_histogram(mapping = aes(x = state,
+                               fill = as.factor(body_camera)),
+                 stat = "count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1)) 
 ```
 
 ```{r}
 
+# line graph
+#ggplot(data = killings,
+   #    mapping = aes(x = region)) +
+  #geom_line(mapping = aes(y))
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+fit <- lm( ~ sum(body_camera==FALSE), data = killings)
+```
 
